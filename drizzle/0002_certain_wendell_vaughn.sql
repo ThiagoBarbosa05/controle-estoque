@@ -1,0 +1,1 @@
+ALTER TABLE "wines" ADD COLUMN "discontinued" boolean DEFAULT false NOT NULL;
