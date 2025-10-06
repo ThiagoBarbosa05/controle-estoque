@@ -78,12 +78,13 @@ export const wines = pgTable("wines", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  country: text("country").notNull(),
-  type: text("type").notNull(),
-  inStock: text("in_stock").notNull(),
+  country: text("country"),
+  type: text("type"),
+  inStock: text("in_stock").notNull().default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  size: text("size").notNull(),
+  size: text("size"),
   discontinued: boolean("discontinued").default(false).notNull(),
+  externalId: text("external_id").notNull().unique(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
