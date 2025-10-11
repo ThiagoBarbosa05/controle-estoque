@@ -1,5 +1,4 @@
-"use client";
-
+"use client"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Filter, X } from "lucide-react";
 import { useWineFilters } from "@/hooks/use-wine-actions";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 interface WineFiltersProps {
   availableCountries?: string[];
@@ -25,27 +26,51 @@ export function WineFilters({
   availableTypes = [],
   availableSizes = [],
 }: WineFiltersProps) {
-  const { currentFilters, updateFilters, clearFilters } = useWineFilters();
+  // const { currentFilters, updateFilters, clearFilters } = useWineFilters();
 
-  const handleFilterChange = (key: string, value: string) => {
-    updateFilters({ [key]: value });
-  };
+  // const handleFilterChange = (key: string, value: string) => {
+  //   updateFilters({ [key]: value });
+  // };
 
-  const handleSearchChange = (value: string) => {
-    updateFilters({ search: value });
-  };
+  // const handleSearchChange = (value: string) => {
+  //   updateFilters({ search: value });
+  // };
 
-  const hasActiveFilters = Object.entries(currentFilters).some(
-    ([key, value]) =>
-      key !== "page" &&
-      key !== "sortBy" &&
-      key !== "sortOrder" &&
-      value &&
-      value !== "all" &&
-      value !== "active" &&
-      value !== "createdAt" &&
-      value !== "desc"
-  );
+  // const hasActiveFilters = Object.entries(currentFilters).some(
+  //   ([key, value]) =>
+  //     key !== "page" &&
+  //     key !== "sortBy" &&
+  //     key !== "sortOrder" &&
+  //     value &&
+  //     value !== "all" &&
+  //     value !== "active" &&
+  //     value !== "createdAt" &&
+  //     value !== "desc"
+  // );
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  function handleSearch() {
+    const params = new URLSearchParams(searchParams);
+    if (searchTerm) {
+      params.set("search", searchTerm);
+    } else {
+      params.delete("search");
+    }
+    router.push(`/wines?${params.toString()}`);
+  }
+ 
+
+  function clearFilters() {
+    const params = new URLSearchParams(searchParams);
+    params.delete("search");
+    setSearchTerm("");
+    router.push(`/wines?${params.toString()}`);
+
+  }
+
 
   return (
     <Card>
@@ -53,7 +78,7 @@ export function WineFilters({
         <CardTitle className="flex items-center gap-2">
           <Filter className="h-5 w-5" />
           Filtros
-          {hasActiveFilters && (
+          {/* {hasActiveFilters && (
             <Button
               variant="outline"
               size="sm"
@@ -63,23 +88,35 @@ export function WineFilters({
               <X className="h-4 w-4 mr-1" />
               Limpar
             </Button>
-          )}
+          )} */}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Busca por nome */}
         <div className="grid gap-2">
           <Label htmlFor="search">Buscar por nome</Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex gap-2">
+
             <Input
               id="search"
               placeholder="Digite o nome do vinho..."
-              value={currentFilters.search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9"
+              value={searchTerm}
+              defaultValue={searchParams.get("search") || searchTerm || ""}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              
             />
+          <Button type="button" onClick={handleSearch} title="Pesquisar" variant="outline">
+              <Search />
+              
+              </Button>
+
           </div>
+          {searchParams.get("search") && (
+            <Button variant="outline" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-1" />
+              Limpar
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -87,8 +124,8 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="country">País</Label>
             <Select
-              value={currentFilters.country}
-              onValueChange={(value) => handleFilterChange("country", value)}
+              // value={currentFilters.country}
+              // onValueChange={(value) => handleFilterChange("country", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -108,8 +145,8 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="type">Tipo</Label>
             <Select
-              value={currentFilters.type}
-              onValueChange={(value) => handleFilterChange("type", value)}
+              // value={currentFilters.type}
+              // onValueChange={(value) => handleFilterChange("type", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -129,8 +166,8 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="size">Tamanho</Label>
             <Select
-              value={currentFilters.size}
-              onValueChange={(value) => handleFilterChange("size", value)}
+              // value={currentFilters.size}
+              // onValueChange={(value) => handleFilterChange("size", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -150,8 +187,8 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="stock">Estoque</Label>
             <Select
-              value={currentFilters.inStock}
-              onValueChange={(value) => handleFilterChange("inStock", value)}
+              // value={currentFilters.inStock}
+              // onValueChange={(value) => handleFilterChange("inStock", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -170,10 +207,10 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="discontinued">Status</Label>
             <Select
-              value={currentFilters.discontinued}
-              onValueChange={(value) =>
-                handleFilterChange("discontinued", value)
-              }
+              // value={currentFilters.discontinued}
+              // onValueChange={(value) =>
+              //   handleFilterChange("discontinued", value)
+              // }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Ativos" />
@@ -190,8 +227,8 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="sortBy">Ordenar por</Label>
             <Select
-              value={currentFilters.sortBy}
-              onValueChange={(value) => handleFilterChange("sortBy", value)}
+              // value={currentFilters.sortBy}
+              // onValueChange={(value) => handleFilterChange("sortBy", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Data de criação" />
@@ -211,8 +248,8 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="sortOrder">Ordem</Label>
             <Select
-              value={currentFilters.sortOrder}
-              onValueChange={(value) => handleFilterChange("sortOrder", value)}
+              // value={currentFilters.sortOrder}
+              // onValueChange={(value) => handleFilterChange("sortOrder", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Decrescente" />
