@@ -4,14 +4,5 @@ import { Plus } from "lucide-react";
 
 // Componentes de botões com os diálogos integrados
 export function AddWineButton() {
-  return (
-    <WineFormDialog
-      trigger={
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Vinho
-        </Button>
-      }
-    />
-  );
+  return <div>oi</div>;
 }
