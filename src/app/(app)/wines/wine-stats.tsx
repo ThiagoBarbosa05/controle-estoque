@@ -2,12 +2,9 @@ import { getWineStats } from "@/app/actions/wines";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, TrendingUp, Wine } from "lucide-react";
-import { unstable_cache } from "next/cache";
 
 export async function WinesStats() {
-  const result = await unstable_cache(async () => await getWineStats(), [
-    "wine-stats",
-  ])();
+  const result = await getWineStats();
 
   if (!result.success) {
     return (

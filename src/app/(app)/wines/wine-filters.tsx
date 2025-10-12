@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,66 +11,114 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Filter, X } from "lucide-react";
-import { useWineFilters } from "@/hooks/use-wine-actions";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useCallback, useTransition } from "react";
+import { WINE_COUNTRIES, WINE_SIZES, WINE_TYPES } from "./wine-dialogs";
 
-interface WineFiltersProps {
-  availableCountries?: string[];
-  availableTypes?: string[];
-  availableSizes?: string[];
-}
+const availableCountries = WINE_COUNTRIES;
+const availableTypes = WINE_TYPES;
+const availableSizes = WINE_SIZES;
 
-export function WineFilters({
-  availableCountries = [],
-  availableTypes = [],
-  availableSizes = [],
-}: WineFiltersProps) {
-  // const { currentFilters, updateFilters, clearFilters } = useWineFilters();
+// Mapas para converter label -> enum
+const countryLabelToEnum: Record<string, string> = {
+  Chile: "CHILE",
+  Argentina: "ARGENTINA",
+  Itália: "ITALIA",
+  França: "FRANÇA",
+  Alemanha: "ALEMANHA",
+  Uruguai: "URUGUAI",
+  Portugal: "PORTUGAL",
+  Espanha: "ESPANHA",
+  Brasil: "BRASIL",
+  "Estados Unidos": "ESTADOS UNIDOS",
+  "Nova Zelândia": "NOVA ZELÂNDIA",
+  Outros: "OUTROS",
+};
+const typeLabelToEnum: Record<string, string> = {
+  Tinto: "TINTO",
+  Branco: "BRANCO",
+  Rose: "ROSE",
+  Espumante: "ESPUMANTE",
+  Fortificado: "FORTIFICADO",
+  Sobremesa: "SOBREMESA",
+};
+const sizeLabelToEnum: Record<string, string> = {
+  "187ml": "187ml",
+  "375ml": "375ml",
+  "750ml": "750ml",
+  "1L": "1L",
+  "1.5L": "1.5L",
+  "3L": "3L",
+  "6L": "6L",
+};
 
-  // const handleFilterChange = (key: string, value: string) => {
-  //   updateFilters({ [key]: value });
-  // };
-
-  // const handleSearchChange = (value: string) => {
-  //   updateFilters({ search: value });
-  // };
-
-  // const hasActiveFilters = Object.entries(currentFilters).some(
-  //   ([key, value]) =>
-  //     key !== "page" &&
-  //     key !== "sortBy" &&
-  //     key !== "sortOrder" &&
-  //     value &&
-  //     value !== "all" &&
-  //     value !== "active" &&
-  //     value !== "createdAt" &&
-  //     value !== "desc"
-  // );
+export function WineFilters() {
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [isPending, startTransition] = useTransition();
+
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  function handleSearch() {
-    const params = new URLSearchParams(searchParams);
-    if (searchTerm) {
-      params.set("search", searchTerm);
-    } else {
-      params.delete("search");
-    }
-    router.push(`/wines?${params.toString()}`);
-  }
- 
+  const updateFilters = useCallback(
+    (newFilters: Record<string, string>) => {
+      startTransition(() => {
+        const params = new URLSearchParams(searchParams);
 
-  function clearFilters() {
-    const params = new URLSearchParams(searchParams);
-    params.delete("search");
-    setSearchTerm("");
-    router.push(`/wines?${params.toString()}`);
+        // Reset para primeira página quando filtros mudarem
+        params.delete("page");
 
-  }
+        Object.entries(newFilters).forEach(([key, value]) => {
+          if (value && value !== "all" && value !== "") {
+            params.set(key, value);
+          } else {
+            params.delete(key);
+          }
+        });
 
+        router.push(`/wines?${params.toString()}`);
+      });
+    },
+    [searchParams, router]
+  );
+
+  const handleSearch = useCallback(() => {
+    updateFilters({ search: searchTerm });
+  }, [searchTerm, updateFilters]);
+
+  const handleFilterChange = useCallback(
+    (key: string, value: string) => {
+      let filterValue = value;
+      if (key === "country") {
+        filterValue =
+          value === "all" ? "all" : countryLabelToEnum[value] || value;
+      } else if (key === "type") {
+        filterValue = value === "all" ? "all" : typeLabelToEnum[value] || value;
+      } else if (key === "size") {
+        filterValue = value === "all" ? "all" : sizeLabelToEnum[value] || value;
+      }
+      updateFilters({ [key]: filterValue });
+    },
+    [updateFilters]
+  );
+
+  const clearAllFilters = useCallback(() => {
+    startTransition(() => {
+      setSearchTerm("");
+      router.push("/wines");
+    });
+  }, [router]);
+
+  // Verificar se tem filtros ativos
+  const hasActiveFilters = Array.from(searchParams.entries()).some(
+    ([key, value]) =>
+      key !== "page" &&
+      key !== "limit" &&
+      value &&
+      value !== "all" &&
+      value !== "active" &&
+      value !== "createdAt" &&
+      value !== "desc"
+  );
 
   return (
     <Card>
@@ -78,17 +126,18 @@ export function WineFilters({
         <CardTitle className="flex items-center gap-2">
           <Filter className="h-5 w-5" />
           Filtros
-          {/* {hasActiveFilters && (
+          {hasActiveFilters && (
             <Button
               variant="outline"
               size="sm"
-              onClick={clearFilters}
+              onClick={clearAllFilters}
               className="ml-auto"
+              disabled={isPending}
             >
               <X className="h-4 w-4 mr-1" />
               Limpar
             </Button>
-          )} */}
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -96,27 +145,23 @@ export function WineFilters({
         <div className="grid gap-2">
           <Label htmlFor="search">Buscar por nome</Label>
           <div className="relative flex gap-2">
-
             <Input
               id="search"
               placeholder="Digite o nome do vinho..."
               value={searchTerm}
               defaultValue={searchParams.get("search") || searchTerm || ""}
               onChange={(e) => setSearchTerm(e.target.value)}
-              
             />
-          <Button type="button" onClick={handleSearch} title="Pesquisar" variant="outline">
+            <Button
+              type="button"
+              onClick={handleSearch}
+              title="Pesquisar"
+              variant="outline"
+              disabled={isPending}
+            >
               <Search />
-              
-              </Button>
-
-          </div>
-          {searchParams.get("search") && (
-            <Button variant="outline" onClick={clearFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Limpar
             </Button>
-          )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -124,8 +169,9 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="country">País</Label>
             <Select
-              // value={currentFilters.country}
-              // onValueChange={(value) => handleFilterChange("country", value)}
+              value={searchParams.get("country") || "all"}
+              onValueChange={(value) => handleFilterChange("country", value)}
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -145,8 +191,9 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="type">Tipo</Label>
             <Select
-              // value={currentFilters.type}
-              // onValueChange={(value) => handleFilterChange("type", value)}
+              value={searchParams.get("type") || "all"}
+              onValueChange={(value) => handleFilterChange("type", value)}
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -166,8 +213,9 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="size">Tamanho</Label>
             <Select
-              // value={currentFilters.size}
-              // onValueChange={(value) => handleFilterChange("size", value)}
+              value={searchParams.get("size") || "all"}
+              onValueChange={(value) => handleFilterChange("size", value)}
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -187,8 +235,9 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="stock">Estoque</Label>
             <Select
-              // value={currentFilters.inStock}
-              // onValueChange={(value) => handleFilterChange("inStock", value)}
+              value={searchParams.get("inStock") || "all"}
+              onValueChange={(value) => handleFilterChange("inStock", value)}
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -207,10 +256,11 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="discontinued">Status</Label>
             <Select
-              // value={currentFilters.discontinued}
-              // onValueChange={(value) =>
-              //   handleFilterChange("discontinued", value)
-              // }
+              value={searchParams.get("discontinued") || "active"}
+              onValueChange={(value) =>
+                handleFilterChange("discontinued", value)
+              }
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Ativos" />
@@ -227,8 +277,9 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="sortBy">Ordenar por</Label>
             <Select
-              // value={currentFilters.sortBy}
-              // onValueChange={(value) => handleFilterChange("sortBy", value)}
+              value={searchParams.get("sortBy") || "createdAt"}
+              onValueChange={(value) => handleFilterChange("sortBy", value)}
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Data de criação" />
@@ -248,8 +299,9 @@ export function WineFilters({
           <div className="grid gap-2">
             <Label htmlFor="sortOrder">Ordem</Label>
             <Select
-              // value={currentFilters.sortOrder}
-              // onValueChange={(value) => handleFilterChange("sortOrder", value)}
+              value={searchParams.get("sortOrder") || "desc"}
+              onValueChange={(value) => handleFilterChange("sortOrder", value)}
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Decrescente" />

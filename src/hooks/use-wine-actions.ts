@@ -6,12 +6,12 @@ import {
   createWine,
   updateWine,
   deleteWine,
-  toggleWineDiscontinued,
   updateWineStock,
   type CreateWineInput,
   type UpdateWineInput,
 } from "@/app/actions/wines";
-import { revalidateWinesCache } from "@/app/actions/wines-cache";
+import { revalidateWinesCache } from "@/app/(app)/wines/actions/wines-cache";
+// import { toggleWineDiscontinued } from "@/app/actions/wines-backup";
 
 export function useWineActions() {
   const [isPending, startTransition] = useTransition();
@@ -93,7 +93,8 @@ export function useWineActions() {
     return new Promise<{ success: boolean; error?: string }>((resolve) => {
       startTransition(async () => {
         try {
-          const result = await toggleWineDiscontinued(id, discontinued);
+          // const result = await toggleWineDiscontinued(id, discontinued);
+          const result = { success: false, error: "Not implemented" };
 
           if (result.success) {
             await revalidateWinesCache();

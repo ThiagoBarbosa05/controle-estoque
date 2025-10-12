@@ -1,14 +1,118 @@
-import { getWines, GetWinesInput } from "@/app/actions/wines";
+import { getWines, type GetWinesInput } from "@/app/actions/wines";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { QuickStockUpdate } from "@/components/wines/quick-stock-update";
-import { AddWineButton, DeleteWineButton, EditWineButton } from "@/components/wines/wine-dialogs";
-import { WineFilters } from "@/app/(app)/wines/wine-filters";
+
 import { WinesPagination } from "@/components/wines/wines-pagination";
-import { Globe, MoreHorizontal, Wine } from "lucide-react";
-import { unstable_cache } from "next/cache";
+
+import { Edit, Globe, MoreHorizontal, Plus, Wine } from "lucide-react";
+import { EditWineButton } from "./edit-wine-button";
+import { DeleteWineButton } from "./delete-wine-button";
+import { WineFormDialog } from "./wine-dialogs";
+
+// Componente para uma linha de vinho (responsivo)
+function WineRow({ wine }: { wine: any }) {
+  return (
+    <div
+      key={wine.id}
+      className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors bg-background"
+    >
+      {/* Mobile layout */}
+      <div className="md:hidden space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium break-words max-w-[60vw]">{wine.name}</h3>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="flex items-center gap-1">
+                <QuickStockUpdate wine={wine} />
+                <WineFormDialog wine={wine}>
+                  <Button variant="outline" size="sm">
+                    <Edit className="h-4 w-4 mr-1" />
+                  </Button>
+                </WineFormDialog>
+                <DeleteWineButton wine={wine} />
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+          <span>{wine.country}</span>
+          <span>{wine.type}</span>
+          <span>{wine.size}</span>
+          <span
+            className={wine.inStock === "0" ? "text-red-600" : "text-green-600"}
+          >
+            {wine.inStock} unidades
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <Badge variant={wine.discontinued ? "secondary" : "default"}>
+            {wine.discontinued ? "Descontinuado" : "Ativo"}
+          </Badge>
+          {wine.inStock === "0" && (
+            <Badge variant="outline" className="text-red-600 border-red-600">
+              Sem estoque
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop layout */}
+      <div className="hidden md:contents">
+        <div className="col-span-3 font-medium break-words">{wine.name}</div>
+        <div className="col-span-2 flex items-center gap-1">
+          <Globe className="h-3 w-3 text-muted-foreground" />
+          {wine.country}
+        </div>
+        <div className="col-span-2">{wine.type}</div>
+        <div className="col-span-1">{wine.size}</div>
+        <div className="col-span-1">
+          <Badge
+            variant="outline"
+            className={
+              wine.inStock === "0"
+                ? "text-red-600 border-red-600"
+                : parseInt(wine.inStock) <= 5
+                ? "text-amber-600 border-amber-600"
+                : "text-green-600 border-green-600"
+            }
+          >
+            {wine.inStock}
+          </Badge>
+        </div>
+        <div className="col-span-1">
+          <Badge variant={wine.discontinued ? "secondary" : "default"}>
+            {wine.discontinued ? "Descontinuado" : "Ativo"}
+          </Badge>
+        </div>
+        <div className="col-span-2 flex gap-2 flex-wrap">
+          <QuickStockUpdate wine={wine} />
+          <WineFormDialog wine={wine}>
+            <Button variant="outline" size="sm">
+              <Edit className="h-4 w-4 mr-1" />
+            </Button>
+          </WineFormDialog>
+          <DeleteWineButton wine={wine} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export async function WinesList({
   searchParams,
@@ -16,34 +120,48 @@ export async function WinesList({
   searchParams: Record<string, string | undefined>;
 }) {
   // Converter parâmetros de busca para entrada da query
+  // Log para depuração
+  // Garantir que só valores válidos dos enums sejam passados
+  const validCountries = [
+    "CHILE",
+    "ARGENTINA",
+    "ITALIA",
+    "FRANÇA",
+    "ALEMANHA",
+    "URUGUAI",
+    "PORTUGAL",
+    "ESPANHA",
+    "BRASIL",
+    "ESTADOS UNIDOS",
+    "NOVA ZELÂNDIA",
+    "OUTROS",
+  ];
+  const validTypes = [
+    "TINTO",
+    "BRANCO",
+    "ROSE",
+    "ESPUMANTE",
+    "FORTIFICADO",
+    "SOBREMESA",
+  ];
+  const validSizes = ["187ml", "375ml", "750ml", "1L", "1.5L", "3L", "6L"];
+
   const queryInput: Partial<GetWinesInput> = {
     page: parseInt(searchParams.page || "1"),
     limit: parseInt(searchParams.limit || "10"),
     search: searchParams.search,
-    country: searchParams.country === "all" ? undefined : searchParams.country,
+    country:
+      searchParams.country && validCountries.includes(searchParams.country)
+        ? (searchParams.country as GetWinesInput["country"])
+        : undefined,
     type:
-      searchParams.type === "all"
-        ? undefined
-        : (searchParams.type as
-            | "Tinto"
-            | "Branco"
-            | "Rosé"
-            | "Espumante"
-            | "Fortificado"
-            | "Sobremesa"
-            | undefined),
+      searchParams.type && validTypes.includes(searchParams.type)
+        ? (searchParams.type as GetWinesInput["type"])
+        : undefined,
     size:
-      searchParams.size === "all"
-        ? undefined
-        : (searchParams.size as
-            | "187ml"
-            | "375ml"
-            | "750ml"
-            | "1L"
-            | "1.5L"
-            | "3L"
-            | "6L"
-            | undefined),
+      searchParams.size && validSizes.includes(searchParams.size)
+        ? (searchParams.size as GetWinesInput["size"])
+        : undefined,
     inStock: (searchParams.inStock || "all") as
       | "all"
       | "available"
@@ -62,9 +180,7 @@ export async function WinesList({
     sortOrder: (searchParams.sortOrder || "desc") as "asc" | "desc",
   };
 
-  const result = await unstable_cache(async () => await getWines(queryInput), [
-    "wines", queryInput.country, queryInput.type, queryInput.size, queryInput.inStock, queryInput.discontinued, queryInput.sortBy, queryInput.sortOrder, queryInput.page?.toString(), queryInput.limit?.toString(), queryInput.search
-  ])();
+  const result = await getWines(queryInput);
 
   if (!result.success) {
     return (
@@ -78,7 +194,7 @@ export async function WinesList({
     );
   }
 
-  const { wines, pagination, filters } = result.data ?? {
+  const { wines, pagination } = result.data ?? {
     wines: [],
     pagination: {
       page: 1,
@@ -98,18 +214,18 @@ export async function WinesList({
   return (
     <div className="space-y-4">
       {/* Filtros */}
-      <WineFilters
-        availableCountries={filters.countries}
-        availableTypes={filters.types}
-        availableSizes={filters.sizes}
-      />
 
       {/* Lista de vinhos */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Vinhos Cadastrados ({pagination.total})</span>
-            <AddWineButton />
+            <WineFormDialog>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Vinho
+              </Button>
+            </WineFormDialog>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -133,97 +249,7 @@ export async function WinesList({
 
               {/* Lista de vinhos */}
               {wines.map((wine) => (
-                <div
-                  key={wine.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  {/* Mobile layout */}
-                  <div className="md:hidden space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">{wine.name}</h3>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <QuickStockUpdate wine={wine} />
-                          <EditWineButton wine={wine} />
-                          <DeleteWineButton wine={wine} />
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-                      <span>{wine.country}</span>
-                      <span>{wine.type}</span>
-                      <span>{wine.size}</span>
-                      <span
-                        className={
-                          wine.inStock === "0"
-                            ? "text-red-600"
-                            : "text-green-600"
-                        }
-                      >
-                        {wine.inStock} unidades
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Badge
-                        variant={wine.discontinued ? "secondary" : "default"}
-                      >
-                        {wine.discontinued ? "Descontinuado" : "Ativo"}
-                      </Badge>
-                      {wine.inStock === "0" && (
-                        <Badge
-                          variant="outline"
-                          className="text-red-600 border-red-600"
-                        >
-                          Sem estoque
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Desktop layout */}
-                  <div className="hidden md:contents">
-                    <div className="col-span-3 font-medium">{wine.name}</div>
-                    <div className="col-span-2 flex items-center gap-1">
-                      <Globe className="h-3 w-3 text-muted-foreground" />
-                      {wine.country}
-                    </div>
-                    <div className="col-span-2">{wine.type}</div>
-                    <div className="col-span-1">{wine.size}</div>
-                    <div className="col-span-1">
-                      <Badge
-                        variant="outline"
-                        className={
-                          wine.inStock === "0"
-                            ? "text-red-600 border-red-600"
-                            : parseInt(wine.inStock) <= 5
-                            ? "text-amber-600 border-amber-600"
-                            : "text-green-600 border-green-600"
-                        }
-                      >
-                        {wine.inStock}
-                      </Badge>
-                    </div>
-                    <div className="col-span-1">
-                      <Badge
-                        variant={wine.discontinued ? "secondary" : "default"}
-                      >
-                        {wine.discontinued ? "Descontinuado" : "Ativo"}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2 flex gap-2">
-                      <QuickStockUpdate wine={wine} />
-                      <EditWineButton wine={wine} />
-                      <DeleteWineButton wine={wine} />
-                    </div>
-                  </div>
-                </div>
+                <WineRow key={wine.id} wine={wine} />
               ))}
 
               {/* Paginação */}

@@ -28,35 +28,11 @@ export function CustomerFormDialog({
   children,
 }: CustomerFormDialogProps) {
   const [open, setOpen] = useState(false);
-  // const [customerId, setCustomerId] = useState(customer?.id || "");
-  // const { handleCreateCustomer, handleUpdateCustomer, isPending, error } =
-  //   useCustomerActions();
 
   const [formState, formAction, isPending] = useActionState(
     customer ? updateCustomer.bind(null, customer.id) : createCustomer,
     EMPTY_FORM_STATE
   );
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   if (!name.trim()) {
-  //     return;
-  //   }
-
-  //   if (customer) {
-  //     handleUpdateCustomer({ id: customer.id, name: name.trim() });
-  //   } else {
-  //     handleCreateCustomer({ name: name.trim() });
-  //   }
-
-  //   // Fechar modal após sucesso
-  //   if (!error) {
-  //     setOpen(false);
-  //     setName("");
-  //     onSuccess?.();
-  //   }
-  // };
 
   const handleClose = () => {
     setOpen(false);

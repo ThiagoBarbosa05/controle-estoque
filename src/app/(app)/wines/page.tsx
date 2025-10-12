@@ -1,112 +1,23 @@
 import { Suspense } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Wine,
-  Package,
-  TrendingUp,
-  AlertTriangle,
-  RefreshCw,
-  Globe,
-  MoreHorizontal,
-} from "lucide-react";
-import {
-  getWines,
-  getWineStats,
-  getLowStockWines,
-  type GetWinesInput,
-} from "@/app/actions/wines";
-import { revalidateWinesCache } from "@/app/actions/wines-cache";
-import { WineFilters } from "@/app/(app)/wines/wine-filters";
-import { WinesPagination } from "@/components/wines/wines-pagination";
-import {
-  AddWineButton,
-  EditWineButton,
-  DeleteWineButton,
-} from "@/components/wines/wine-dialogs";
-import { QuickStockUpdate } from "@/components/wines/quick-stock-update";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { RefreshCw } from "lucide-react";
+import { revalidateWinesCache } from "@/app/(app)/wines/actions/wines-cache";
 import { StatCardSkeleton } from "./stat-card-skeleton";
 import { WinesStats } from "./wine-stats";
-import { WinesTableSkeleton } from "./wines-table-skeleton";
 import { WinesList } from "./wines-list";
+import { WinesTableSkeleton } from "./wines-table-skeleton";
+import { WineFilters } from "./wine-filters";
 
-// Componente de carregamento
-
-
-
-// Componente de estatísticas gerais dos vinhos
-
-
-// Componente de alerta de baixo estoque
-// async function LowStockAlert() {
-//   const result = await getLowStockWines(5);
-
-//   if (!result.success || !result.data || result.data.length === 0) {
-//     return null;
-//   }
-
-//   const lowStockWines = result.data;
-
-//   return (
-//     <Card className="border-amber-200 bg-amber-50">
-//       <CardHeader>
-//         <CardTitle className="flex items-center gap-2 text-amber-600">
-//           <AlertTriangle className="h-5 w-5" />
-//           Vinhos com Estoque Baixo
-//         </CardTitle>
-//       </CardHeader>
-//       <CardContent>
-//         <div className="grid gap-2">
-//           {lowStockWines.slice(0, 5).map((wine) => (
-//             <div
-//               key={wine.id}
-//               className="flex items-center justify-between p-2 bg-white rounded-lg border border-amber-200"
-//             >
-//               <div>
-//                 <p className="font-medium">{wine.name}</p>
-//                 <p className="text-sm text-muted-foreground">
-//                   {wine.country} • {wine.type} • {wine.size}
-//                 </p>
-//               </div>
-//               <Badge
-//                 variant="outline"
-//                 className="text-amber-600 border-amber-600"
-//               >
-//                 {wine.inStock} unidades
-//               </Badge>
-//             </div>
-//           ))}
-//           {lowStockWines.length > 5 && (
-//             <p className="text-sm text-muted-foreground mt-2 text-center">
-//               +{lowStockWines.length - 5} outros vinhos com estoque baixo
-//             </p>
-//           )}
-//         </div>
-//       </CardContent>
-//     </Card>
-//   );
-// }
-
-// Componente da lista de vinhos
-
-
-// Componente principal da página
 export default async function WinesPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   // Normalizar searchParams
+
+  const filters = await searchParams;
   const normalizedSearchParams = Object.fromEntries(
-    Object.entries(searchParams).map(([key, value]) => [
+    Object.entries(filters).map(([key, value]) => [
       key,
       Array.isArray(value) ? value[0] : value,
     ])
@@ -137,17 +48,21 @@ export default async function WinesPage({
         </Suspense>
       </div>
 
-      {/* Alerta de estoque baixo */}
-      {/* <Suspense
-        fallback={<div className="h-32 bg-muted animate-pulse rounded-lg" />}
-      >
-        <LowStockAlert />
-      </Suspense> */}
+      <WineFilters />
 
       {/* Lista de vinhos com filtros */}
-      <Suspense fallback={<WinesTableSkeleton />}>
+      <Suspense
+        key={
+          normalizedSearchParams
+            ? JSON.stringify(normalizedSearchParams)
+            : "all"
+        }
+        fallback={<WinesTableSkeleton />}
+      >
         <WinesList searchParams={normalizedSearchParams} />
       </Suspense>
+
+      {/* <WinesListWithFilters searchParams={normalizedSearchParams} /> */}
     </div>
   );
 }
