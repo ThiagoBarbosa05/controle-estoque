@@ -26,11 +26,14 @@ const createWineSchema = z.object({
   country: wineCountryEnum,
   type: wineTypeEnum,
   size: wineSizeEnum,
-  inStock: z
-    .string()
-    .regex(/^\d+$/, "Estoque deve ser um número")
-    .transform((val) => val.trim())
-    .refine((val) => parseInt(val) >= 0, "Estoque não pode ser negativo"),
+  inStock: z.coerce
+    .number()
+    .int("Estoque deve ser um número inteiro")
+    .min(0, "Estoque não pode ser negativo"),
+  minStock: z.coerce
+    .number()
+    .int("Estoque mínimo deve ser um número inteiro")
+    .min(0, "Estoque mínimo não pode ser negativo"),
   discontinued: z.boolean().default(false),
 });
 
@@ -45,11 +48,14 @@ const updateWineSchema = z.object({
   country: wineCountryEnum,
   type: wineTypeEnum,
   size: wineSizeEnum,
-  inStock: z
-    .string()
-    .regex(/^\d+$/, "Estoque deve ser um número")
-    .transform((val) => val.trim())
-    .refine((val) => parseInt(val) >= 0, "Estoque não pode ser negativo"),
+  inStock: z.coerce
+    .number()
+    .int("Estoque deve ser um número inteiro")
+    .min(0, "Estoque não pode ser negativo"),
+  minStock: z.coerce
+    .number()
+    .int("Estoque mínimo deve ser um número inteiro")
+    .min(0, "Estoque mínimo não pode ser negativo"),
   discontinued: z.boolean().default(false),
 });
 
@@ -74,11 +80,10 @@ const getWinesSchema = z.object({
 
 const updateStockSchema = z.object({
   id: z.string().uuid("ID inválido"),
-  inStock: z
-    .string()
-    .regex(/^\d+$/, "Estoque deve ser um número")
-    .transform((val) => val.trim())
-    .refine((val) => parseInt(val) >= 0, "Estoque não pode ser negativo"),
+  inStock: z.coerce
+    .number()
+    .int("Estoque deve ser um número inteiro")
+    .min(0, "Estoque não pode ser negativo"),
 });
 
 // Tipos
@@ -278,9 +283,9 @@ const getCachedWines = unstable_cache(
 
     // Filtro por estoque (melhorado)
     if (inStock === "available") {
-      conditions.push(sql`CAST(${wines.inStock} AS INTEGER) > 0`);
+      conditions.push(sql`${wines.inStock} > 0`);
     } else if (inStock === "out-of-stock") {
-      conditions.push(eq(wines.inStock, "0"));
+      conditions.push(eq(wines.inStock, 0));
     }
 
     // Filtro por descontinuado
@@ -487,6 +492,7 @@ export async function updateWine(
         type: validatedData.type,
         size: validatedData.size,
         inStock: validatedData.inStock,
+        minStock: validatedData.minStock,
         discontinued: validatedData.discontinued,
       })
       .where(eq(wines.id, validatedData.id))
@@ -616,8 +622,8 @@ const getCachedWineStats = unstable_cache(
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE discontinued = false) as active,
         COUNT(*) FILTER (WHERE discontinued = true) as discontinued,
-        COUNT(*) FILTER (WHERE CAST(in_stock AS INTEGER) = 0 AND discontinued = false) as out_of_stock,
-        COUNT(*) FILTER (WHERE CAST(in_stock AS INTEGER) BETWEEN 1 AND 5 AND discontinued = false) as low_stock,
+        COUNT(*) FILTER (WHERE in_stock = 0 AND discontinued = false) as out_of_stock,
+        COUNT(*) FILTER (WHERE in_stock BETWEEN 1 AND 5 AND discontinued = false) as low_stock,
         COUNT(*) FILTER (WHERE created_at >= ${thirtyDaysAgo}) as recent_count
       FROM ${wines}
     `;
@@ -762,11 +768,11 @@ const getCachedLowStockWines = unstable_cache(
       .from(wines)
       .where(
         and(
-          sql`CAST(${wines.inStock} AS INTEGER) BETWEEN 0 AND ${validThreshold}`,
+          sql`${wines.inStock} BETWEEN 0 AND ${validThreshold}`,
           eq(wines.discontinued, false)
         )
       )
-      .orderBy(sql`CAST(${wines.inStock} AS INTEGER) ASC`, asc(wines.name));
+      .orderBy(asc(wines.inStock), asc(wines.name));
 
     return {
       success: true,

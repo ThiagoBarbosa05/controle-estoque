@@ -39,10 +39,13 @@ export const createWineSchema = z.object({
   country: wineCountryEnum,
   type: wineTypeEnum,
   size: wineSizeEnum,
-  inStock: z
-    .string()
-    .regex(/^\d+$/, "Estoque deve ser um número")
-    .transform((val) => val.trim())
-    .refine((val) => parseInt(val) >= 0, "Estoque não pode ser negativo"),
+  inStock: z.coerce
+    .number()
+    .int("Estoque deve ser um número inteiro")
+    .min(0, "Estoque não pode ser negativo"),
+  minStock: z.coerce
+    .number()
+    .int("Estoque mínimo deve ser um número inteiro")
+    .min(0, "Estoque mínimo não pode ser negativo"),
   discontinued: z.coerce.boolean().default(false),
 });

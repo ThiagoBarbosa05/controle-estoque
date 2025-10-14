@@ -36,6 +36,20 @@
       "when": 1759707795493,
       "tag": "0004_bitter_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1760405829731,
+      "tag": "0005_harsh_pete_wisdom",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1760406175025,
+      "tag": "0006_wealthy_spitfire",
+      "breakpoints": true
     }
   ]
 }

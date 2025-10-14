@@ -6,15 +6,14 @@ import {
 } from "@/app/(app)/wines/actions/wines-cache";
 import { db } from "@/db";
 import { wines } from "@/db/schema";
-import { ActionsResponse, FormState } from "@/lib/form-state";
-import { nanoid } from "nanoid";
+import { ActionsResponse, type FormState } from "@/lib/form-state";
 import z from "zod";
 import { createWineSchema } from "./schemas/schema";
 import { and, eq, ilike } from "drizzle-orm";
 
 export async function updateWine(
   wineId: string,
-  formState: FormState,
+  _formState: FormState,
   formData: FormData
 ) {
   try {
@@ -59,15 +58,16 @@ export async function updateWine(
       });
     }
 
-    // Inserir novo wine
+    // Atualizar vinho
     const [updatedWine] = await db
       .update(wines)
       .set({
         name: parsedData.name,
-        country: parsedData.country,
-        type: parsedData.type,
+        country: parsedData.country.toUpperCase(),
+        type: parsedData.type.toUpperCase(),
         size: parsedData.size,
         inStock: parsedData.inStock,
+        minStock: parsedData.minStock,
         discontinued: parsedData.discontinued,
       })
       .where(eq(wines.id, wineId))

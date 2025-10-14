@@ -6,7 +6,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,9 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Edit, Trash2, AlertTriangle } from "lucide-react";
-import { useWineActions } from "@/hooks/use-wine-actions";
+
 import type { Wine } from "@/app/actions/wines";
 import { createWine } from "@/app/(app)/wines/actions/create-wine";
 import { EMPTY_FORM_STATE } from "@/lib/form-state";
@@ -201,20 +198,48 @@ export function WineFormDialog({ wine, children }: WineFormDialogProps) {
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="inStock">Estoque</Label>
-              <Input
-                id="inStock"
-                type="number"
-                min="0"
-                name="inStock"
-                disabled={isPending}
-                defaultValue={
-                  formState.payload?.get("inStock")?.toString() ||
-                  wine?.inStock ||
-                  "0"
-                }
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="inStock">Estoque</Label>
+                <Input
+                  id="inStock"
+                  type="number"
+                  min="0"
+                  name="inStock"
+                  disabled={isPending}
+                  defaultValue={
+                    formState.payload?.get("inStock")?.toString() ||
+                    wine?.inStock ||
+                    "0"
+                  }
+                />
+                {formState.fieldErrors.inStock && (
+                  <p className="text-red-400 text-xs">
+                    {formState.fieldErrors.inStock}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="minStock">Estoque Mínimo</Label>
+                <Input
+                  id="minStock"
+                  type="number"
+                  min="0"
+                  name="minStock"
+                  disabled={isPending}
+                  defaultValue={
+                    formState.payload?.get("minStock")?.toString() ||
+                    wine?.minStock ||
+                    "0"
+                  }
+                />
+                {formState.fieldErrors.minStock && (
+                  <p className="text-red-400 text-xs">
+                    {formState.fieldErrors.minStock}
+                  </p>
+                )}
+              </div>
             </div>
 
             {wine && (

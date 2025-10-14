@@ -6,14 +6,13 @@ import {
 } from "@/app/(app)/wines/actions/wines-cache";
 import { db } from "@/db";
 import { wines } from "@/db/schema";
-import { ActionsResponse, FormState } from "@/lib/form-state";
+import { ActionsResponse, type FormState } from "@/lib/form-state";
 import { and, eq, ilike } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
 import z from "zod";
 import { createWineSchema } from "./schemas/schema";
 import { nanoid } from "nanoid";
 
-export async function createWine(formState: FormState, formData: FormData) {
+export async function createWine(_formState: FormState, formData: FormData) {
   try {
     const parsedData = createWineSchema.parse(Object.fromEntries(formData));
 
@@ -44,9 +43,13 @@ export async function createWine(formState: FormState, formData: FormData) {
     const [newWine] = await db
       .insert(wines)
       .values({
-        ...parsedData,
-        type: parsedData.type.toUpperCase(),
+        name: parsedData.name,
         country: parsedData.country.toUpperCase(),
+        type: parsedData.type.toUpperCase(),
+        size: parsedData.size,
+        inStock: parsedData.inStock,
+        minStock: parsedData.minStock,
+        discontinued: parsedData.discontinued,
         externalId: `unSync-${nanoid()}`,
       })
       .returning();
