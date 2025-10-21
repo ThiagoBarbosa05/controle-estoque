@@ -25,16 +25,6 @@ import {
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertTriangle,
   Users,
@@ -49,34 +39,32 @@ import {
 import { useCustomerWinesActions } from "@/hooks/use-customer-wines-actions";
 import { getCustomers } from "@/app/actions/customers";
 import { getWines } from "@/app/actions/wines";
+import { cn } from "@/lib/utils";
+import {
+  useWineSelection,
+  WineSelectionProvider,
+} from "./WineSelectionContext";
+import { SelectedWinesTable } from "./SelectedWinesTable";
+import { WineSelectionTable } from "./WineSelectionTable";
 import type { Customer } from "@/app/actions/customers";
 import type { Wine } from "@/app/actions/wines";
-import { cn } from "@/lib/utils";
-
-interface WineSelection extends Wine {
-  selected: boolean;
-}
 
 interface AddWinesToCustomerClientProps {
   initialCustomers: Customer[];
   initialWines: Wine[];
 }
 
-export function AddWinesToCustomerClient({
+function AddWinesToCustomerContent({
   initialCustomers,
   initialWines,
 }: AddWinesToCustomerClientProps) {
   const router = useRouter();
 
+  const { selectedWineIds } = useWineSelection();
   // Estados principais
   const [customerId, setCustomerId] = useState("");
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-  const [wines, setWines] = useState<WineSelection[]>(
-    initialWines.map((wine) => ({ ...wine, selected: false }))
-  );
-  const [selectedWineIds, setSelectedWineIds] = useState<Set<string>>(
-    new Set()
-  );
+  const [wines, setWines] = useState<Wine[]>(initialWines);
 
   // Estados de loading
   const [loadingCustomers, setLoadingCustomers] = useState(false);
@@ -113,8 +101,8 @@ export function AddWinesToCustomerClient({
       if (result.success && result.data) {
         setCustomers(result.data.customers);
       }
-    } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
+    } catch {
+      console.error("Erro ao carregar clientes");
       setError("Erro ao carregar clientes");
     } finally {
       setLoadingCustomers(false);
@@ -133,26 +121,9 @@ export function AddWinesToCustomerClient({
         sortOrder: "asc",
       });
       if (result.success && result.data) {
-        const winesWithSelection: WineSelection[] = result.data.wines.map(
-          (wine) => ({
-            ...wine,
-            selected: false,
-          })
-        );
-        setWines(winesWithSelection);
-        // Manter seleções existentes
-        setSelectedWineIds((prev) => {
-          const newSet = new Set<string>();
-          prev.forEach((id) => {
-            if (winesWithSelection.some((wine) => wine.id === id)) {
-              newSet.add(id);
-            }
-          });
-          return newSet;
-        });
+        setWines(result.data.wines);
       }
     } catch (error) {
-      console.error("Erro ao carregar vinhos:", error);
       setError("Erro ao carregar vinhos");
     } finally {
       setLoadingWines(false);
@@ -217,57 +188,28 @@ export function AddWinesToCustomerClient({
     setCustomerComboboxOpen(false);
   }, []);
 
-  const handleWineToggle = useCallback((wineId: string) => {
-    setSelectedWineIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(wineId)) {
-        newSet.delete(wineId);
-      } else {
-        newSet.add(wineId);
-      }
-      return newSet;
-    });
-  }, []);
-
-  const handleSelectAll = useCallback(() => {
-    if (selectedWineIds.size === wines.length) {
-      setSelectedWineIds(new Set());
-    } else {
-      setSelectedWineIds(new Set(wines.map((wine) => wine.id)));
-    }
-  }, [selectedWineIds.size, wines]);
-
   const handleSubmit = useCallback(async () => {
     if (!customerId || selectedWineIds.size === 0) {
       setError("Selecione um cliente e pelo menos um vinho");
       return;
     }
-
     setSubmitting(true);
     setError("");
-
     try {
-      // Adicionar vinhos um por um
       const promises = Array.from(selectedWineIds).map((wineId) =>
-        handleAddWineToCustomer({ customerId, wineId })
+        handleAddWineToCustomer({ customerId, wineId: wineId as string })
       );
-
       const results = await Promise.all(promises);
       const failedResults = results.filter((result) => !result.success);
-
-      if (failedResults.length > 0) {
+      if (failedResults.length > 0)
         setError(`Erro ao adicionar ${failedResults.length} vinho(s) à lista`);
-      } else {
-        // Sucesso - redirecionar
-        router.push(`/customers/${customerId}/wines`);
-      }
-    } catch (error) {
-      console.error("Erro ao adicionar vinhos:", error);
+      else router.push(`/customers/${customerId}/wines`);
+    } catch {
       setError("Erro interno do servidor");
     } finally {
       setSubmitting(false);
     }
-  }, [customerId, selectedWineIds, handleAddWineToCustomer, router]);
+  }, [customerId, handleAddWineToCustomer, router, selectedWineIds]);
 
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-6xl">
@@ -283,7 +225,6 @@ export function AddWinesToCustomerClient({
           </p>
         </div>
       </div>
-
       {/* Error Alert */}
       {error && (
         <Alert variant="destructive">
@@ -291,7 +232,6 @@ export function AddWinesToCustomerClient({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Customer Selection */}
         <div className="lg:col-span-1">
@@ -363,7 +303,6 @@ export function AddWinesToCustomerClient({
                     </Command>
                   </PopoverContent>
                 </Popover>
-
                 {/* Selected Customer Info */}
                 {selectedCustomer && (
                   <div className="mt-4 p-3 bg-muted rounded-md">
@@ -379,7 +318,6 @@ export function AddWinesToCustomerClient({
             </CardContent>
           </Card>
         </div>
-
         {/* Wine Selection */}
         <div className="lg:col-span-2">
           <Card>
@@ -404,122 +342,14 @@ export function AddWinesToCustomerClient({
                   className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
-
-              {/* Selection Summary */}
-              {wines.length > 0 && (
-                <div className="flex items-center justify-between p-3 bg-muted rounded-md">
-                  <span className="text-sm font-medium">
-                    {selectedWineIds.size} de {wines.length} vinho(s)
-                    selecionado(s)
-                  </span>
-                  <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                    {selectedWineIds.size === wines.length
-                      ? "Desmarcar Todos"
-                      : "Selecionar Todos"}
-                  </Button>
-                </div>
-              )}
-
+              {/* Vinhos selecionados sempre visíveis */}
+              <SelectedWinesTable />
               {/* Wine Table */}
-              <div className="border rounded-md">
-                {loadingWines ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="ml-2">Carregando vinhos...</span>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={
-                              wines.length > 0 &&
-                              selectedWineIds.size === wines.length
-                            }
-                            onCheckedChange={handleSelectAll}
-                            aria-label="Selecionar todos"
-                          />
-                        </TableHead>
-                        <TableHead>Vinho</TableHead>
-                        <TableHead>País</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Estoque</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {wines.length > 0 ? (
-                        wines.map((wine) => (
-                          <TableRow
-                            key={wine.id}
-                            className={cn(
-                              "cursor-pointer transition-colors hover:bg-muted/50",
-                              selectedWineIds.has(wine.id) && "bg-muted/50"
-                            )}
-                            onClick={() => handleWineToggle(wine.id)}
-                          >
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedWineIds.has(wine.id)}
-                                onCheckedChange={() =>
-                                  handleWineToggle(wine.id)
-                                }
-                                aria-label={`Selecionar ${wine.name}`}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <WineIcon className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">{wine.name}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">
-                                {wine.country}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="text-xs">
-                                {wine.type}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className={cn(
-                                  "text-sm font-medium",
-                                  wine.inStock === 0
-                                    ? "text-destructive"
-                                    : wine.inStock <= wine.minStock
-                                    ? "text-yellow-600"
-                                    : "text-green-600"
-                                )}
-                              >
-                                {wine.inStock}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={5}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            {wineSearch
-                              ? "Nenhum vinho encontrado para esta busca."
-                              : "Nenhum vinho disponível."}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
+              <WineSelectionTable wines={wines} loading={loadingWines} />
             </CardContent>
           </Card>
         </div>
       </div>
-
       {/* Action Buttons */}
       <div className="flex justify-end gap-4 border-t pt-6">
         <Button variant="outline" onClick={() => router.back()}>
@@ -545,5 +375,19 @@ export function AddWinesToCustomerClient({
         </Button>
       </div>
     </div>
+  );
+}
+
+export function AddWinesToCustomerClient({
+  initialCustomers,
+  initialWines,
+}: AddWinesToCustomerClientProps) {
+  return (
+    <WineSelectionProvider>
+      <AddWinesToCustomerContent
+        initialCustomers={initialCustomers}
+        initialWines={initialWines}
+      />
+    </WineSelectionProvider>
   );
 }

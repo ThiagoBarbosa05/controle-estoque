@@ -144,7 +144,7 @@ export async function WinesList({
     "FORTIFICADO",
     "SOBREMESA",
   ];
-  const validSizes = ["187ml", "375ml", "750ml", "1L", "1.5L", "3L", "6L"];
+  const validSizes = ["187ML", "375ML", "750ML", "1L", "1.5L", "3L", "6L"];
 
   const queryInput: Partial<GetWinesInput> = {
     page: parseInt(searchParams.page || "1"),
