@@ -123,7 +123,7 @@ function AddWinesToCustomerContent({
       if (result.success && result.data) {
         setWines(result.data.wines);
       }
-    } catch (error) {
+    } catch {
       setError("Erro ao carregar vinhos");
     } finally {
       setLoadingWines(false);
@@ -212,42 +212,63 @@ function AddWinesToCustomerContent({
   }, [customerId, handleAddWineToCustomer, router, selectedWineIds]);
 
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-6xl">
+    <div className="container mx-auto py-8 space-y-8 max-w-7xl">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => router.back()}
+          className="self-start sm:self-auto hover:bg-accent transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" />
+          <span className="sr-only">Voltar</span>
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Adicionar Vinhos à Lista</h1>
-          <p className="text-muted-foreground">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Adicionar Vinhos à Lista
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Selecione um cliente e os vinhos que deseja adicionar à sua lista
+            pessoal
           </p>
         </div>
       </div>
+
       {/* Error Alert */}
       {error && (
-        <Alert variant="destructive">
+        <Alert
+          variant="destructive"
+          className="border-destructive/20 bg-destructive/5"
+        >
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="font-medium">{error}</AlertDescription>
         </Alert>
       )}
-      <div className="grid lg:grid-cols-3 gap-6">
+
+      <div className="grid lg:grid-cols-12 gap-6 xl:gap-8">
         {/* Customer Selection */}
-        <div className="lg:col-span-1">
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Cliente
+        <div className="lg:col-span-4 xl:col-span-3">
+          <Card className="h-fit shadow-sm border-0 bg-card">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-lg font-semibold">Cliente</span>
               </CardTitle>
-              <CardDescription>
-                Escolha o cliente para adicionar os vinhos
+              <CardDescription className="text-sm">
+                Escolha o cliente para adicionar os vinhos selecionados
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label>Cliente *</Label>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Cliente *</Label>
                 <Popover
                   open={customerComboboxOpen}
                   onOpenChange={setCustomerComboboxOpen}
@@ -257,27 +278,55 @@ function AddWinesToCustomerContent({
                       variant="outline"
                       role="combobox"
                       aria-expanded={customerComboboxOpen}
-                      className="w-full justify-between"
+                      className={cn(
+                        "w-full justify-between h-11",
+                        "hover:bg-accent hover:border-accent-foreground/20",
+                        "transition-all duration-200",
+                        !selectedCustomer && "text-muted-foreground"
+                      )}
                       disabled={loadingCustomers}
                     >
-                      {loadingCustomers
-                        ? "Carregando..."
-                        : selectedCustomer?.name || "Selecione um cliente..."}
+                      <div className="flex items-center gap-2 min-w-0">
+                        {loadingCustomers ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Carregando...</span>
+                          </>
+                        ) : selectedCustomer ? (
+                          <>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="truncate">
+                              {selectedCustomer.name}
+                            </span>
+                          </>
+                        ) : (
+                          <span>Selecione um cliente...</span>
+                        )}
+                      </div>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popper-anchor-width] p-0">
+                  <PopoverContent
+                    className="w-[--radix-popper-anchor-width] p-0"
+                    align="start"
+                  >
                     <Command>
                       <CommandInput
                         placeholder="Pesquisar cliente..."
                         value={customerSearch}
                         onValueChange={setCustomerSearch}
+                        className="border-none focus:ring-0"
                       />
                       <CommandList>
-                        <CommandEmpty>
-                          {loadingCustomers
-                            ? "Carregando..."
-                            : "Nenhum cliente encontrado."}
+                        <CommandEmpty className="py-6 text-center">
+                          {loadingCustomers ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Carregando...</span>
+                            </div>
+                          ) : (
+                            "Nenhum cliente encontrado."
+                          )}
                         </CommandEmpty>
                         <CommandGroup>
                           {customers.map((customer) => (
@@ -285,12 +334,17 @@ function AddWinesToCustomerContent({
                               key={customer.id}
                               value={customer.name}
                               onSelect={() => handleCustomerSelect(customer.id)}
+                              className="cursor-pointer"
                             >
-                              <Users className="mr-2 h-4 w-4" />
-                              <span>{customer.name}</span>
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <span className="truncate">
+                                  {customer.name}
+                                </span>
+                              </div>
                               <Check
                                 className={cn(
-                                  "ml-auto h-4 w-4",
+                                  "ml-auto h-4 w-4 text-primary",
                                   customerId === customer.id
                                     ? "opacity-100"
                                     : "opacity-0"
@@ -303,14 +357,22 @@ function AddWinesToCustomerContent({
                     </Command>
                   </PopoverContent>
                 </Popover>
+
                 {/* Selected Customer Info */}
                 {selectedCustomer && (
-                  <div className="mt-4 p-3 bg-muted rounded-md">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        {selectedCustomer.name}
-                      </span>
+                  <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">
+                          Cliente selecionado
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {selectedCustomer.name}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -318,61 +380,120 @@ function AddWinesToCustomerContent({
             </CardContent>
           </Card>
         </div>
+
         {/* Wine Selection */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <WineIcon className="h-5 w-5" />
-                Vinhos Disponíveis
+        <div className="lg:col-span-8 xl:col-span-9">
+          <Card className="shadow-sm border-0 bg-card">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <WineIcon className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <span className="text-lg font-semibold">
+                    Vinhos Disponíveis
+                  </span>
+                  {selectedWineIds.size > 0 && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-muted-foreground">
+                        {selectedWineIds.size} vinho
+                        {selectedWineIds.size !== 1 ? "s" : ""} selecionado
+                        {selectedWineIds.size !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </CardTitle>
-              <CardDescription>
-                Selecione os vinhos para adicionar à lista
+              <CardDescription className="text-sm">
+                Selecione os vinhos para adicionar à lista do cliente
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {/* Search Input */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Pesquisar vinhos..."
+                  placeholder="Pesquisar vinhos por nome, país ou tipo..."
                   value={wineSearch}
                   onChange={(e) => setWineSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                  className={cn(
+                    "w-full pl-10 pr-4 py-3 border border-input rounded-lg",
+                    "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
+                    "transition-all duration-200",
+                    "placeholder:text-muted-foreground/60"
+                  )}
                 />
+                {loadingWines && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
               </div>
+
               {/* Vinhos selecionados sempre visíveis */}
               <SelectedWinesTable />
+
               {/* Wine Table */}
               <WineSelectionTable wines={wines} loading={loadingWines} />
             </CardContent>
           </Card>
         </div>
       </div>
+
       {/* Action Buttons */}
-      <div className="flex justify-end gap-4 border-t pt-6">
-        <Button variant="outline" onClick={() => router.back()}>
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={submitting || !customerId || selectedWineIds.size === 0}
-          size="lg"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Adicionando...
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Adicionar {selectedWineIds.size} Vinho
-              {selectedWineIds.size !== 1 ? "s" : ""}
-            </>
-          )}
-        </Button>
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-6">
+          {/* Info sobre seleção */}
+          <div className="flex items-center gap-3">
+            {selectedWineIds.size > 0 && selectedCustomer && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg">
+                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                  <ShoppingCart className="h-3 w-3 text-primary" />
+                </div>
+                <span className="text-sm font-medium">
+                  {selectedWineIds.size} vinho
+                  {selectedWineIds.size !== 1 ? "s" : ""} para{" "}
+                  <span className="text-primary">{selectedCustomer.name}</span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Botões de ação */}
+          <div className="flex gap-3 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              className="flex-1 sm:flex-none"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !customerId || selectedWineIds.size === 0}
+              size="lg"
+              className={cn(
+                "flex-1 sm:flex-none shadow-sm",
+                "disabled:opacity-50 disabled:cursor-not-allowed"
+              )}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adicionando...
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Adicionar{" "}
+                  {selectedWineIds.size > 0 ? selectedWineIds.size : ""} Vinho
+                  {selectedWineIds.size !== 1 ? "s" : ""}
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

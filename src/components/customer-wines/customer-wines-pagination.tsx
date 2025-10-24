@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,36 +15,32 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { useCustomerWinesFilters } from "@/hooks/use-customer-wines-actions";
+import type { PaginationData } from "@/types/customer-wines";
 
 interface CustomerWinesPaginationProps {
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  pagination: PaginationData;
 }
 
 export function CustomerWinesPagination({
   pagination,
 }: CustomerWinesPaginationProps) {
-  const { updateFilters } = useCustomerWinesFilters();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const updatePage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`?${params.toString()}`);
+  };
+
+  const updateLimit = (limit: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("limit", limit);
+    params.set("page", "1"); // Reset to first page when changing limit
+    router.push(`?${params.toString()}`);
+  };
 
   const { page, limit, total, totalPages, hasNext, hasPrev } = pagination;
-
-  const handlePageChange = (newPage: number) => {
-    updateFilters({ page: newPage.toString() });
-  };
-
-  const handleLimitChange = (newLimit: string) => {
-    updateFilters({
-      limit: newLimit,
-      page: "1", // Reset to first page when changing limit
-    });
-  };
 
   // Calculate range of displayed items
   const startItem = (page - 1) * limit + 1;
@@ -54,7 +51,7 @@ export function CustomerWinesPagination({
       {/* Items per page selector */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Itens por página:</span>
-        <Select value={limit.toString()} onValueChange={handleLimitChange}>
+        <Select value={limit.toString()} onValueChange={updateLimit}>
           <SelectTrigger className="w-20">
             <SelectValue />
           </SelectTrigger>
@@ -77,7 +74,7 @@ export function CustomerWinesPagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(1)}
+          onClick={() => updatePage(1)}
           disabled={!hasPrev}
           className="h-8 w-8 p-0"
         >
@@ -87,7 +84,7 @@ export function CustomerWinesPagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(page - 1)}
+          onClick={() => updatePage(page - 1)}
           disabled={!hasPrev}
           className="h-8 w-8 p-0"
         >
@@ -114,7 +111,7 @@ export function CustomerWinesPagination({
                 key={pageNum}
                 variant={pageNum === page ? "default" : "outline"}
                 size="sm"
-                onClick={() => handlePageChange(pageNum)}
+                onClick={() => updatePage(pageNum)}
                 className="h-8 w-8 p-0"
               >
                 {pageNum}
@@ -126,7 +123,7 @@ export function CustomerWinesPagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(page + 1)}
+          onClick={() => updatePage(page + 1)}
           disabled={!hasNext}
           className="h-8 w-8 p-0"
         >
@@ -136,7 +133,7 @@ export function CustomerWinesPagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(totalPages)}
+          onClick={() => updatePage(totalPages)}
           disabled={!hasNext}
           className="h-8 w-8 p-0"
         >
