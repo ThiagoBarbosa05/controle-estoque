@@ -7,6 +7,7 @@ import { WinesStats } from "./wine-stats";
 import { WinesList } from "./wines-list";
 import { WinesTableSkeleton } from "./wines-table-skeleton";
 import { WineFilters } from "./wine-filters";
+import { WineExportButtons } from "./wine-export-buttons";
 
 export default async function WinesPage({
   searchParams,
@@ -33,12 +34,15 @@ export default async function WinesPage({
             Gerencie o catálogo de vinhos e controle de estoque
           </p>
         </div>
-        <form action={revalidateWinesCache}>
-          <Button type="submit" variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar Cache
-          </Button>
-        </form>
+        <div className="flex gap-2">
+          <WineExportButtons />
+          <form action={revalidateWinesCache}>
+            <Button type="submit" variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar Cache
+            </Button>
+          </form>
+        </div>
       </div>
 
       {/* Grid de estatísticas */}
